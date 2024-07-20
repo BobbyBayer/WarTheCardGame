@@ -62,11 +62,23 @@ namespace WarTheCardGame
             {
                 card.active = false;
             }
+
+            if(e.X < (Size.Width / 2) + 250 && e.Y < (Size.Height / 2) + 250 && e.X > (Size.Width / 2) - 250 && e.Y > (Size.Height / 2) - 250)
+            {
+                GoToWar();
+            }
+            else
+            {
+                ShowCardsInHand();
+            }
+
             selectedCard = null;
         }
 
         private void FormPaint(object sender, PaintEventArgs e)
         {
+            e.Graphics.FillRectangle(new SolidBrush(Color.AliceBlue), Size.Width/2 - 250, Size.Height/2 - 250, 500, 500);
+
             foreach (Card card in cardsInHand)
             {
                 e.Graphics.DrawImage(card.cardPic, card.position.X, card.position.Y, card.width, card.height);
@@ -109,9 +121,9 @@ namespace WarTheCardGame
         {
             CreateDecks();
 
-            DrawCard();
-            DrawCard();
-            DrawCard();
+            //DrawCard();
+            //DrawCard();
+            //DrawCard();
         }
 
         private void DrawCard()
@@ -132,6 +144,11 @@ namespace WarTheCardGame
 
         private void SuffleDiscardPile()
         {
+            if(yourDeck.Count == 0 && yourDiscard.Count == 0)
+            {
+                //Post a you lose screen
+            }
+
             yourDeck = yourDiscard;
             yourDeck = yourDeck.OrderBy(_ => rng.Next()).ToList();
             yourDiscard.Clear();
@@ -180,6 +197,65 @@ namespace WarTheCardGame
             {
                 DrawCard();
             }
+        }
+
+        private void GoToWar()
+        {
+            var yourCardValue = selectedCard.cardValue;
+            Card rndOpponentCard;
+
+            if (opponentDeck.Count > 0)
+            {
+                rndOpponentCard = opponentDeck.Last();
+            }
+            else
+            {
+                ShuffleOpponentDiscard();
+                rndOpponentCard = opponentDeck.Last();
+            }
+
+            if(yourCardValue > rndOpponentCard.cardValue)
+            {
+                yourDiscard.Add(opponentDeck.Last());
+                yourDiscard.Add(selectedCard);
+                opponentDeck.RemoveAt(opponentDeck.Count - 1);
+                cardsInHand.Remove(selectedCard);
+
+                infoLabel.Text = "You won with a " + yourCardValue + " vs " + rndOpponentCard.cardValue;
+            }
+            else if(yourCardValue == rndOpponentCard.cardValue)
+            {
+                //TODO figure out a war
+                yourDiscard.Add(opponentDeck.Last());
+                yourDiscard.Add(selectedCard);
+                opponentDeck.RemoveAt(opponentDeck.Count - 1);
+                cardsInHand.Remove(selectedCard);
+
+                infoLabel.Text = "It was a tie with a " + yourCardValue;
+            }
+            else
+            {
+                opponentDiscard.Add(opponentDeck.Last());
+                opponentDiscard.Add(selectedCard);
+                opponentDeck.RemoveAt(opponentDeck.Count - 1);
+                cardsInHand.Remove(selectedCard);
+
+                infoLabel.Text = "You lost with a " + yourCardValue + " vs " + rndOpponentCard.cardValue;
+            }
+
+            UpdateCountLabels();
+        }
+
+        private void ShuffleOpponentDiscard()
+        {
+            if(opponentDeck.Count == 0 && opponentDiscard.Count == 0)
+            {
+                //Send a you win page
+            }
+
+            opponentDeck = opponentDiscard;
+            opponentDeck = opponentDeck.OrderBy(_ => rng.Next()).ToList();
+            opponentDiscard.Clear();
         }
     }
 }
